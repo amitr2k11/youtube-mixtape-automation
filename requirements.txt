@@ -4,3 +4,5 @@ streamlit
 requests
 pydub
 openai
+python-multipart
+
