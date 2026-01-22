@@ -1,3 +1,6 @@
+from fastapi import UploadFile, File
+import shutil
+
 from fastapi import FastAPI, BackgroundTasks
 from backend.pipeline import run_pipeline
 from fastapi.responses import FileResponse
@@ -65,6 +68,18 @@ def download_description():
         )
 
     return {"status": "not_ready"}
+
+@app.post("/upload-audio")
+async def upload_audio(files: list[UploadFile] = File(...)):
+    os.makedirs("audio", exist_ok=True)
+
+    for file in files:
+        file_path = os.path.join("audio", file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+    return {"status": "uploaded"}
+
 
 
 

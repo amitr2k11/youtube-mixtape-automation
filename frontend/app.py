@@ -2,12 +2,24 @@ import streamlit as st
 import requests
 import os
 
-st.title(" YouTube Mixtape Creator")
+# =====================
+# CONFIG
+# =====================
+API_URL = "https://youtube-mixtape-automation.onrender.com/create-mixtape"
+VIDEO_DOWNLOAD_URL = "https://youtube-mixtape-automation.onrender.com/download/video"
+DESC_DOWNLOAD_URL = "https://youtube-mixtape-automation.onrender.com/download/description"
 
-# Ensure audio folder exists
 AUDIO_DIR = "audio"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
+# =====================
+# UI: TITLE
+# =====================
+st.title("YouTube Mixtape Creator")
+
+# =====================
+# Upload MP3 files
+# =====================
 uploaded_files = st.file_uploader(
     "Upload MP3 files",
     type=["mp3"],
@@ -15,54 +27,55 @@ uploaded_files = st.file_uploader(
 )
 
 if uploaded_files:
-    for file in uploaded_files:
-        file_path = os.path.join(AUDIO_DIR, file.name)
-        with open(file_path, "wb") as f:
-            f.write(file.getbuffer())
-    st.success("Audio files uploaded successfully!")
+    files = [
+        ("files", (file.name, file.getvalue(), "audio/mpeg"))
+        for file in uploaded_files
+    ]
 
+    response = requests.post(
+        "https://youtube-mixtape-automation.onrender.com/upload-audio",
+        files=files
+    )
+
+    if response.status_code == 200:
+        st.success("Audio files uploaded successfully to cloud!")
+    else:
+        st.error("Failed to upload audio files.")
+
+# =====================
+# Create Mixtape Button
+# =====================
 if st.button("Create Mixtape"):
     try:
-        response = requests.post(
-            "http://127.0.0.1:8000/create-mixtape",
-            timeout=5
-        )
+        requests.post(API_URL, timeout=3)
 
-        if response.status_code == 200:
-            st.success("Mixtape generation started. Please wait a few minutes.")
-            st.info("You can keep this page open or come back later.")
-        else:
-            st.error(response.text)
+        st.success("Mixtape generation started. Please wait a few minutes.")
+        st.info("Cloud backend is processing your request.")
+        st.stop()
+
+    except (requests.exceptions.ReadTimeout, requests.exceptions.Timeout):
+        st.success("Mixtape generation started. Backend is waking up.")
+        st.info("Render free tier may take 1–2 minutes. Please wait.")
+        st.stop()
 
     except requests.exceptions.ConnectionError:
-        st.error("Backend is not running. Please start FastAPI.")
+        st.error("Cloud backend unreachable. Please check Render service.")
+        st.stop()
 
+# =====================
+# Download Output
+# =====================
 st.divider()
 st.subheader("Download Output")
 
-output_dir = "output"
+st.markdown(
+    f"[Download Video]({VIDEO_DOWNLOAD_URL})",
+    unsafe_allow_html=True
+)
 
-video_path = os.path.join(output_dir, "mixtape.mp4")
-desc_path = os.path.join(output_dir, "ai_description.txt")
+st.markdown(
+    f"[Download AI Description]({DESC_DOWNLOAD_URL})",
+    unsafe_allow_html=True
+)
 
-if os.path.exists(video_path):
-    with open(video_path, "rb") as f:
-        st.download_button(
-            label=" Download Video",
-            data=f,
-            file_name="mixtape.mp4",
-            mime="video/mp4"
-        )
-else:
-    st.info("Video not ready yet.")
-
-if os.path.exists(desc_path):
-    with open(desc_path, "rb") as f:
-        st.download_button(
-            label="Download AI Description",
-            data=f,
-            file_name="ai_description.txt",
-            mime="text/plain"
-        )
-else:
-    st.info("Description not ready yet.")
+st.info("If download does not start, video may still be processing. Try again after a minute.")
