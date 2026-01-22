@@ -1,19 +1,19 @@
 import streamlit as st
 import requests
-import os
 
 # =====================
 # CONFIG
 # =====================
-API_URL = "https://youtube-mixtape-automation.onrender.com/create-mixtape"
-VIDEO_DOWNLOAD_URL = "https://youtube-mixtape-automation.onrender.com/download/video"
-DESC_DOWNLOAD_URL = "https://youtube-mixtape-automation.onrender.com/download/description"
+BASE_URL = "https://youtube-mixtape-automation-production.up.railway.app"
+# YOUR REAL RAILWAY URL — NO < >
 
-AUDIO_DIR = "audio"
-os.makedirs(AUDIO_DIR, exist_ok=True)
+UPLOAD_URL = BASE_URL + "/upload-audio"
+API_URL = BASE_URL + "/create-mixtape"
+VIDEO_DOWNLOAD_URL = BASE_URL + "/download/video"
+DESC_DOWNLOAD_URL = BASE_URL + "/download/description"
 
 # =====================
-# UI: TITLE
+# UI
 # =====================
 st.title("YouTube Mixtape Creator")
 
@@ -28,54 +28,38 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
     files = [
-        ("files", (file.name, file.getvalue(), "audio/mpeg"))
-        for file in uploaded_files
+        ("files", (f.name, f.getbuffer(), "audio/mpeg"))
+        for f in uploaded_files
     ]
 
-    response = requests.post(
-        "https://youtube-mixtape-automation.onrender.com/upload-audio",
-        files=files
-    )
+    with st.spinner("Uploading files to cloud backend..."):
+        r = requests.post(UPLOAD_URL, files=files)
 
-    if response.status_code == 200:
+    if r.status_code == 200:
         st.success("Audio files uploaded successfully to cloud!")
     else:
-        st.error("Failed to upload audio files.")
+        st.error("Failed to upload files to backend.")
 
 # =====================
-# Create Mixtape Button
+# Create Mixtape
 # =====================
 if st.button("Create Mixtape"):
     try:
         requests.post(API_URL, timeout=3)
-
         st.success("Mixtape generation started. Please wait a few minutes.")
         st.info("Cloud backend is processing your request.")
-        st.stop()
-
-    except (requests.exceptions.ReadTimeout, requests.exceptions.Timeout):
+    except requests.exceptions.ReadTimeout:
         st.success("Mixtape generation started. Backend is waking up.")
-        st.info("Render free tier may take 1–2 minutes. Please wait.")
-        st.stop()
-
     except requests.exceptions.ConnectionError:
-        st.error("Cloud backend unreachable. Please check Render service.")
-        st.stop()
+        st.error("Cloud backend unreachable.")
 
 # =====================
 # Download Output
 # =====================
-st.divider()
 st.subheader("Download Output")
 
-st.markdown(
-    f"[Download Video]({VIDEO_DOWNLOAD_URL})",
-    unsafe_allow_html=True
-)
+if st.button("Download Video"):
+    st.markdown(f"[Click here to download video]({VIDEO_DOWNLOAD_URL})")
 
-st.markdown(
-    f"[Download AI Description]({DESC_DOWNLOAD_URL})",
-    unsafe_allow_html=True
-)
-
-st.info("If download does not start, video may still be processing. Try again after a minute.")
+if st.button("Download AI Description"):
+    st.markdown(f"[Click here to download description]({DESC_DOWNLOAD_URL})")
