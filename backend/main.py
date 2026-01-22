@@ -1,86 +1,67 @@
-from fastapi import UploadFile, File
-import shutil
-
-from fastapi import FastAPI, BackgroundTasks
-from backend.pipeline import run_pipeline
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 import os
+import shutil
+
+from backend.pipeline import run_pipeline
 
 app = FastAPI()
 
-@app.post("/create-mixtape")
-def create_mixtape(background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_pipeline)
-    return {"status": "Mixtape started in background"}
+# =====================
+# PATHS
+# =====================
+AUDIO_DIR = "audio"
+OUTPUT_DIR = "output"
+VIDEO_PATH = os.path.join(OUTPUT_DIR, "mixtape.mp4")
+DESC_PATH = os.path.join(OUTPUT_DIR, "ai_description.txt")
 
-@app.get("/download/video")
-def download_video():
-    video_path = "output/mixtape.mp4"
+os.makedirs(AUDIO_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    if os.path.exists(video_path):
-        return FileResponse(
-            path=video_path,
-            media_type="video/mp4",
-            filename="mixtape.mp4"
-        )
-
-    return {"status": "not_ready"}
-
-@app.get("/download/description")
-def download_description():
-    desc_path = "output/ai_description.txt"
-
-    if os.path.exists(desc_path):
-        return FileResponse(
-            path=desc_path,
-            media_type="text/plain",
-            filename="ai_description.txt"
-        )
-
-    return {"status": "not_ready"}
-
-from fastapi.responses import FileResponse
-import os
-
-@app.get("/download/video")
-def download_video():
-    video_path = "output/mixtape.mp4"
-
-    if os.path.exists(video_path):
-        return FileResponse(
-            path=video_path,
-            media_type="video/mp4",
-            filename="mixtape.mp4"
-        )
-
-    return {"status": "not_ready"}
-
-
-@app.get("/download/description")
-def download_description():
-    desc_path = "output/ai_description.txt"
-
-    if os.path.exists(desc_path):
-        return FileResponse(
-            path=desc_path,
-            media_type="text/plain",
-            filename="ai_description.txt"
-        )
-
-    return {"status": "not_ready"}
-
+# =====================
+# UPLOAD AUDIO
+# =====================
 @app.post("/upload-audio")
 async def upload_audio(files: list[UploadFile] = File(...)):
-    os.makedirs("audio", exist_ok=True)
-
     for file in files:
-        file_path = os.path.join("audio", file.filename)
+        file_path = os.path.join(AUDIO_DIR, file.filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
     return {"status": "uploaded"}
 
+# =====================
+# CREATE MIXTAPE (ASYNC)
+# =====================
+@app.post("/create-mixtape")
+def create_mixtape(background_tasks: BackgroundTasks):
+    background_tasks.add_task(run_pipeline)
+    return {"status": "processing"}
 
+# =====================
+# DOWNLOAD VIDEO
+# =====================
+@app.get("/download/video")
+def download_video():
+    if not os.path.exists(VIDEO_PATH):
+        return {"status": "not_ready"}
 
+    return FileResponse(
+        path=VIDEO_PATH,
+        media_type="video/mp4",
+        filename="mixtape.mp4"
+    )
 
+# =====================
+# DOWNLOAD DESCRIPTION
+# =====================
+@app.get("/download/description")
+def download_description():
+    if not os.path.exists(DESC_PATH):
+        return {"status": "not_ready"}
 
+    return FileResponse(
+        path=DESC_PATH,
+        media_type="text/plain",
+        filename="ai_description.txt"
+    )
