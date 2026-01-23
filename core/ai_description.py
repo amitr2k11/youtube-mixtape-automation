@@ -1,21 +1,26 @@
 import os
 
-INPUT_DESC = os.path.join("output", "description.txt")
-OUTPUT_AI_DESC = os.path.join("output", "ai_description.txt")
-
 def main():
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    # If key not present, skip safely
+    if not api_key:
+        print("[AI DESCRIPTION SKIPPED] OPENAI_API_KEY not set")
+        return
+
     try:
         from openai import OpenAI
 
-        # Use API key from environment
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        client = OpenAI(api_key=api_key)
 
-        # Check if input description exists
-        if not os.path.exists(INPUT_DESC):
-            print("[AI DESCRIPTION WARNING] description.txt not found. Skipping AI description.")
+        input_path = os.path.join("output", "description.txt")
+        output_path = os.path.join("output", "ai_description.txt")
+
+        if not os.path.exists(input_path):
+            print("[AI DESCRIPTION WARNING] description.txt not found")
             return
 
-        with open(INPUT_DESC, "r", encoding="utf-8") as f:
+        with open(input_path, "r", encoding="utf-8") as f:
             tracklist = f.read()
 
         prompt = f"""
@@ -41,15 +46,14 @@ Description:
 
         result = response.choices[0].message.content
 
-        with open(OUTPUT_AI_DESC, "w", encoding="utf-8") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
 
-        print("[AI DESCRIPTION] AI-generated title & description created successfully.")
+        print("AI-generated title & description created")
 
     except Exception as e:
-        # IMPORTANT: Do NOT crash pipeline
-        print(f"[AI DESCRIPTION WARNING] {e}")
-        print("[AI DESCRIPTION WARNING] Skipping AI description and continuing pipeline.")
+        print(f"[AI DESCRIPTION ERROR] {e}")
+
 
 if __name__ == "__main__":
     main()
