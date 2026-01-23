@@ -5,7 +5,6 @@ import sys
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PYTHON_EXEC = sys.executable
 
-
 def run_pipeline():
     scripts = [
         "core/merge_audio.py",
@@ -16,18 +15,22 @@ def run_pipeline():
 
     for script in scripts:
         script_path = os.path.join(BASE_DIR, script)
-        print(f"Running: {script_path}")
+        print(f"[PIPELINE] Running: {script_path}", flush=True)
 
         result = subprocess.run(
             [PYTHON_EXEC, script_path],
             cwd=BASE_DIR,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True
         )
 
+        print(result.stdout, flush=True)
+
         if result.returncode != 0:
+            print(result.stderr, flush=True)
             raise RuntimeError(
-                f"Script failed: {script}\n{result.stderr}"
+                f"[PIPELINE ERROR] Script failed: {script}"
             )
 
-
+    print("[PIPELINE] Mixtape pipeline completed successfully.", flush=True)
