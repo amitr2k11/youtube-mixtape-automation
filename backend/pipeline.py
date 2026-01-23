@@ -9,8 +9,8 @@ def run_pipeline():
     scripts = [
         "core/merge_audio.py",
         "core/generate_description.py",
-        "core/ai_description.py",
-        "core/audio_to_video.py",
+        "core/ai_description.py",   # optional
+        "core/audio_to_video.py",   # MUST RUN
     ]
 
     for script in scripts:
@@ -27,10 +27,18 @@ def run_pipeline():
 
         print(result.stdout, flush=True)
 
+        #  ONLY fail pipeline if audio_to_video fails
         if result.returncode != 0:
             print(result.stderr, flush=True)
-            raise RuntimeError(
-                f"[PIPELINE ERROR] Script failed: {script}"
-            )
 
-    print("[PIPELINE] Mixtape pipeline completed successfully.", flush=True)
+            if "audio_to_video.py" in script:
+                raise RuntimeError(
+                    f"[PIPELINE ERROR] Critical script failed: {script}"
+                )
+            else:
+                print(
+                    f"[PIPELINE WARNING] Non-critical script failed: {script}",
+                    flush=True
+                )
+
+    print("[PIPELINE] Video pipeline completed successfully.", flush=True)

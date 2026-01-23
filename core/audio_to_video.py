@@ -1,3 +1,8 @@
+print(">>> AUDIO TO VIDEO SCRIPT STARTED")
+print("Audio file:", audio_file)
+print("Image file:", image_file)
+print("Output file:", output_video)
+
 import os
 import subprocess
 

@@ -10,10 +10,11 @@ app = FastAPI()
 # =====================
 # PATHS
 # =====================
-AUDIO_DIR = "audio"
-OUTPUT_DIR = "output"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 VIDEO_PATH = os.path.join(OUTPUT_DIR, "mixtape.mp4")
 DESC_PATH = os.path.join(OUTPUT_DIR, "ai_description.txt")
+
 
 os.makedirs(AUDIO_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
