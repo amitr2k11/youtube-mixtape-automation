@@ -1,33 +1,49 @@
-import os
 import subprocess
+import os
+from map_assets import get_audio_image_pairs
 
-# Paths
-MERGED_AUDIO = os.path.join("output", "merged.mp3")   # MUST match merge_audio.py
-OUTPUT_VIDEO = os.path.join("output", "mixtape.mp4")
+OUTPUT_DIR = "output"
+CLIPS_DIR = os.path.join(OUTPUT_DIR, "clips")
+FINAL_VIDEO = os.path.join(OUTPUT_DIR, "mixtape.mp4")
 
-# Safety check
-if not os.path.exists(MERGED_AUDIO):
-    raise RuntimeError("Merged audio not found at output/merged.mp3")
+os.makedirs(CLIPS_DIR, exist_ok=True)
 
-print("[AUDIO TO VIDEO] Using merged audio:", MERGED_AUDIO)
+pairs = get_audio_image_pairs()
+clip_files = []
 
-# FFmpeg command
-cmd = [
-    "ffmpeg",
-    "-y",
-    "-f", "lavfi",
-    "-i", "color=c=black:s=1280x720",  # no hardcoded duration
-    "-i", MERGED_AUDIO,
-    "-shortest",                      # video ends with audio
-    "-c:v", "libx264",
-    "-preset", "veryfast",
-    "-pix_fmt", "yuv420p",
-    "-c:a", "aac",
-    "-b:a", "128k",
-    OUTPUT_VIDEO
-]
+for i, pair in enumerate(pairs):
+    clip_path = os.path.join(CLIPS_DIR, f"clip_{i}.mp4")
 
-# Run FFmpeg
-subprocess.run(cmd, check=True)
+    cmd = [
+        "ffmpeg", "-y",
+        "-loop", "1",
+        "-i", pair["image"],
+        "-i", pair["audio"],
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-tune", "stillimage",
+        "-c:a", "aac",
+        "-pix_fmt", "yuv420p",
+        "-shortest",
+        "-vf", "scale=1280:720",
+        clip_path
+    ]
 
-print("[AUDIO TO VIDEO] Video created successfully!")
+    subprocess.run(cmd, check=True)
+    clip_files.append(clip_path)
+
+# concat clips
+with open("output/concat.txt", "w") as f:
+    for clip in clip_files:
+        f.write(f"file '{os.path.abspath(clip)}'\n")
+
+subprocess.run([
+    "ffmpeg", "-y",
+    "-f", "concat",
+    "-safe", "0",
+    "-i", "output/concat.txt",
+    "-c", "copy",
+    FINAL_VIDEO
+], check=True)
+
+print("[SUCCESS] Mixtape video created!")
