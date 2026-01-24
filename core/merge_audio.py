@@ -1,26 +1,14 @@
 from pydub import AudioSegment
 import os
 
-# Folder paths
-audio_folder = "audio"
-output_folder = "output"
+AUDIO_DIR = "audio"
+OUTPUT_FILE = "output/merged.mp3"
 
-# Create output folder if it doesn't exist
-os.makedirs(output_folder, exist_ok=True)
+combined = AudioSegment.empty()
 
-# Empty audio file
-final_audio = AudioSegment.empty()
-
-# Loop through all mp3 files
-for file in os.listdir(audio_folder):
+for file in sorted(os.listdir(AUDIO_DIR)):
     if file.endswith(".mp3"):
-        print(f"Adding {file}")
-        song_path = os.path.join(audio_folder, file)
-        song = AudioSegment.from_mp3(song_path)
-        final_audio += song
+        combined += AudioSegment.from_mp3(os.path.join(AUDIO_DIR, file))
 
-# Export final mixtape
-output_path = os.path.join(output_folder, "mixtape.mp3")
-final_audio.export(output_path, format="mp3")
-
-print(" Mixtape created successfully!")
+combined.export(OUTPUT_FILE, format="mp3")
+print("Merged audio created:", OUTPUT_FILE)

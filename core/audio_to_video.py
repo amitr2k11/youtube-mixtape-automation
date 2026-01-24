@@ -1,54 +1,33 @@
 import os
 import subprocess
 
-AUDIO_DIR = "audio"
-OUTPUT_DIR = "output"
-OUTPUT_VIDEO = os.path.join(OUTPUT_DIR, "mixtape.mp4")
+# Paths
+MERGED_AUDIO = os.path.join("output", "merged.mp3")   # MUST match merge_audio.py
+OUTPUT_VIDEO = os.path.join("output", "mixtape.mp4")
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# Safety check
+if not os.path.exists(MERGED_AUDIO):
+    raise RuntimeError("Merged audio not found at output/merged.mp3")
 
-def main():
-    audio_files = [
-        os.path.join(AUDIO_DIR, f)
-        for f in os.listdir(AUDIO_DIR)
-        if f.endswith(".mp3")
-    ]
+print("[AUDIO TO VIDEO] Using merged audio:", MERGED_AUDIO)
 
-    if not audio_files:
-        print("[AUDIO TO VIDEO] No audio files found. Skipping video creation.")
-        return
+# FFmpeg command
+cmd = [
+    "ffmpeg",
+    "-y",
+    "-f", "lavfi",
+    "-i", "color=c=black:s=1280x720",  # no hardcoded duration
+    "-i", MERGED_AUDIO,
+    "-shortest",                      # video ends with audio
+    "-c:v", "libx264",
+    "-preset", "veryfast",
+    "-pix_fmt", "yuv420p",
+    "-c:a", "aac",
+    "-b:a", "128k",
+    OUTPUT_VIDEO
+]
 
-    print("[AUDIO TO VIDEO] Audio files found:")
-    for f in audio_files:
-        print(" -", f)
+# Run FFmpeg
+subprocess.run(cmd, check=True)
 
-    # Create simple black video with ffmpeg
-    duration_cmd = [
-        "ffprobe", "-i", audio_files[0],
-        "-show_entries", "format=duration",
-        "-v", "quiet", "-of", "csv=p=0"
-    ]
-
-    try:
-        duration = subprocess.check_output(duration_cmd).decode().strip()
-    except Exception:
-        duration = "300"  # fallback
-
-    ffmpeg_cmd = [
-        "ffmpeg",
-        "-y",
-        "-f", "lavfi",
-        "-i", f"color=c=black:s=1280x720:d={duration}",
-        "-i", audio_files[0],
-        "-c:v", "libx264",
-        "-c:a", "aac",
-        "-shortest",
-        OUTPUT_VIDEO
-    ]
-
-    subprocess.run(ffmpeg_cmd, check=True)
-    print("[AUDIO TO VIDEO] Video created successfully!")
-
-if __name__ == "__main__":
-    main()
-
+print("[AUDIO TO VIDEO] Video created successfully!")

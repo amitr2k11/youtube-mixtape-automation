@@ -1,13 +1,6 @@
-# Ignore uploaded audio files
-audio/
-
-# Ignore generated output files
-output/
+# Virtual environment
+venv/
 
 # Python cache
 __pycache__/
 *.pyc
-
-# OS files
-.DS_Store
-Thumbs.db

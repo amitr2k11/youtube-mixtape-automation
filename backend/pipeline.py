@@ -5,10 +5,12 @@ import sys
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PYTHON_EXEC = sys.executable
 
+
 def run_pipeline():
     scripts = [
         "core/merge_audio.py",
         "core/generate_description.py",
+        "core/ai_description.py",
         "core/audio_to_video.py",
     ]
 
@@ -24,5 +26,8 @@ def run_pipeline():
         )
 
         if result.returncode != 0:
+            print(result.stdout)
             print(result.stderr)
-            raise RuntimeError(f"Script failed: {script}")
+            raise RuntimeError(f"Pipeline failed at {script}")
+
+    print("[PIPELINE] Mixtape pipeline completed successfully.")
